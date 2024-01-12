@@ -1,0 +1,167 @@
+#include "dimmable-light.h"
+#include "light.h"
+#include "secrets.h"
+
+#include <Arduino.h>
+#include <PubSubClient.h>
+#include <WiFi.h>
+
+#define testLight Light(BUILTIN_LED)
+
+WiFiClient wifiClient;
+PubSubClient pubSubClient(wifiClient);
+
+// Dimmable Lights (First argument is pin number, second is PWM channel)
+// #define leftInnerTaillight DimmableLight(23, 0)
+// #define leftMiddleTaillight DimmableLight(22, 1)
+// #define leftOuterTaillight DimmableLight(21, 2)
+// #define rightInnerTaillight DimmableLight(19, 3)
+// #define rightMiddleTaillight DimmableLight(18, 4)
+// #define rightOuterTaillight DimmableLight(32, 5)
+// #define leftHeadlight DimmableLight(26, 6)
+// #define rightHeadlight DimmableLight(27, 7)
+
+// Non-dimmable lights
+// #define reverseLights Light(33)
+// #define runningLights Light(14)
+// #define fogLights Light(13)
+
+void callback(char *topic, byte *message, unsigned int length) {
+  Serial.print("Message arrived on topic: ");
+  Serial.print(topic);
+  Serial.print(". Message: ");
+
+  for (int i = 0; i < length; i++) {
+    Serial.print((char)message[i]);
+  }
+  Serial.println();
+
+  // Feel free to add more if statements to control more GPIOs with MQTT
+
+  // If a message is received on the topic esp32/output, you check if the
+  // message is either "on" or "off". Changes the output state according to the
+  // message
+  if (String(topic) == "lego/mustang/cabin/on") {
+    Serial.println("on");
+    digitalWrite(BUILTIN_LED, HIGH);
+  } else if (String(topic) == "lego/mustang/cabin/off") {
+    digitalWrite(BUILTIN_LED, LOW);
+  }
+}
+
+bool attemptingToConnect = false;
+unsigned int msSinceLightChange = 0;
+const int LIGHT_INTERVAL = 250;
+
+void connecting() {
+  // Handle first call to connecting
+  if (!attemptingToConnect) {
+    attemptingToConnect = true;
+    testLight.on();
+  }
+  unsigned int now = millis();
+  if (now - msSinceLightChange > LIGHT_INTERVAL) {
+    msSinceLightChange = now;
+    testLight.toggle();
+  }
+}
+
+void connected() {
+  if (attemptingToConnect) {
+    attemptingToConnect = false;
+    testLight.on();
+  }
+}
+
+bool ensureConnected() {
+  if (WiFi.status() != WL_CONNECTED) {
+  }
+}
+
+void setup() {
+  // Setup LEDs
+  testLight.setup();
+
+  // Connect to WiFi
+  Serial.begin(115200);
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(WIFI_SSID);
+
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+
+  unsigned int msSinceLastCheck = while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+
+  pubSubClient.setServer(MQTT_HOST, MQTT_PORT);
+  pubSubClient.setCallback(callback);
+
+  // leftInnerTaillight.setup();
+  // leftMiddleTaillight.setup();
+  // leftOuterTaillight.setup();
+  // rightInnerTaillight.setup();
+  // rightMiddleTaillight.setup();
+  // rightOuterTaillight.setup();
+  // leftHeadlight.setup();
+  // rightHeadlight.setup();
+  // reverseLights.setup();
+  // runningLights.setup();
+  // fogLights.setup();
+}
+
+void loop() {
+  if (ensureConnected()) {
+  }
+
+  // for (int i = 0; i <= 255; i += 1) {
+  //   testLight.on(i);
+  //   delay(10);
+  // }
+  // for (int i = 255; i >= 0; i -= 1) {
+  //   testLight.on(i);
+  //   delay(10);
+  // }
+  // /** Turn all lights on one at a time */
+  // leftInnerTaillight.on();
+  // delay(250);
+  // leftMiddleTaillight.on();
+  // delay(250);
+  // leftOuterTaillight.on();
+  // delay(250);
+  // rightInnerTaillight.on();
+  // delay(250);
+  // rightMiddleTaillight.on();
+  // delay(250);
+  // rightOuterTaillight.on();
+  // delay(250);
+  // leftHeadlight.on();
+  // delay(250);
+  // rightHeadlight.on();
+  // delay(250);
+  // reverseLights.on();
+  // delay(250);
+  // runningLights.on();
+  // delay(250);
+  // fogLights.on();
+  // delay(1000);
+  // /** Turn off all lights */
+  // leftInnerTaillight.off();
+  // leftMiddleTaillight.off();
+  // leftOuterTaillight.off();
+  // rightInnerTaillight.off();
+  // rightMiddleTaillight.off();
+  // rightOuterTaillight.off();
+  // leftHeadlight.off();
+  // rightHeadlight.off();
+  // reverseLights.off();
+  // runningLights.off();
+  // fogLights.off();
+  // delay(1000);
+}
