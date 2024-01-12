@@ -1,4 +1,4 @@
-#include "dimmable-light.h"
+#include "DimmableLight.h"
 #include <Arduino.h>
 
 // Initialize GPIO pin and PWM channel

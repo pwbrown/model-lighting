@@ -1,8 +1,7 @@
-#include "light.h"
-#include "secrets.h"
-
 #include <Arduino.h>
+#include <Light.h>
 #include <PubSubClient.h>
+#include <Secrets.h>
 #include <WiFi.h>
 
 Light testLight(BUILTIN_LED);

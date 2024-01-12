@@ -1,4 +1,4 @@
-#include "light.h"
+#include "Light.h"
 #include <Arduino.h>
 
 // Set light pin
