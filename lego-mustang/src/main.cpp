@@ -1,64 +1,28 @@
 #include <Arduino.h>
 #include <Light.h>
-#include <PubSubClient.h>
 #include <Secrets.h>
-#include <WiFi.h>
+
+#include "Internal.h"
+#include "MqttClient.h"
 
 Light testLight(BUILTIN_LED);
 
-WiFiClient wifiClient;
-PubSubClient pubSubClient(wifiClient);
+MqttClient mqttClient("LegoMustangClient");
 
-bool isConnecting = true;
-unsigned int msSinceLightChange = 0;
-const int LIGHT_INTERVAL = 500;
+Interval connectingInterval(500);
 
 // Called any time the remote client is actively trying to connect
-void connecting(bool first) {
+void connecting(unsigned int now, bool first) {
   if (first) {
     testLight.on();
   }
-  unsigned int now = millis();
-  if (now > msSinceLightChange + LIGHT_INTERVAL) {
-    msSinceLightChange = now;
+  if (connectingInterval.check(now)) {
     testLight.toggle();
   }
 }
 
 // Called when a connection is established
-void connected() { testLight.on(); }
-
-unsigned int msSinceLastCheck = 0;
-const int CONNECTION_CHECK_INTERVAL = 1000;
-
-// Should be called on every loop to ensure that the connection is stable
-bool ensureConnected() {
-  unsigned int now = millis();
-  bool first = false;
-  if (now > msSinceLastCheck + CONNECTION_CHECK_INTERVAL) {
-    Serial.println("Checking");
-    msSinceLastCheck = now;
-    if (WiFi.status() == WL_CONNECTED &&
-        (pubSubClient.connected() || pubSubClient.connect("ESP32Client"))) {
-      if (isConnecting) {
-        Serial.println("Connected");
-        isConnecting = false;
-        connected();
-        return true;
-      }
-    } else if (!isConnecting) {
-      Serial.println("Disconnected");
-      isConnecting = true;
-      first = true;
-    }
-  }
-  if (isConnecting) {
-    connecting(first);
-    return false;
-  } else {
-    return true;
-  }
-}
+void connected(unsigned int) { testLight.on(); }
 
 void setup() {
   // Setup serial port
@@ -67,12 +31,16 @@ void setup() {
   // Setup LEDs
   testLight.setup();
 
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  pubSubClient.setServer(MQTT_HOST, MQTT_PORT);
+  // Setup WiFi and MQTT and register event callbacks
+  mqttClient.setup(WIFI_SSID, WIFI_PASSWORD, MQTT_HOST, MQTT_PORT)
+      .onConnecting(connecting)
+      .onConnected(connected);
 }
 
 void loop() {
-  if (ensureConnected()) {
-    pubSubClient.loop();
-  }
+  // Create a shared timestamp to ensure synchronized actions
+  unsigned int now = millis();
+  // Execute client loop to maintain connection and listen for events
+  mqttClient.loop(now);
+  delay(250);
 }
