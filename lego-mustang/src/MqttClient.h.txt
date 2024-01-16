@@ -1,0 +1,84 @@
+#ifndef MQTT_CLIENT_H
+#define MQTT_CLIENT_H
+
+#include "Interval.h"
+#include <AsyncMQTT_ESP32.h>
+#include <WebServer.h>
+#include <WiFi.h>
+#include <functional>
+
+#define DEFAULT_KEEP_ALIVE_INTERVAL 1000
+#define CONNECTING_CALLBACK_SIGNATURE std::function<void(unsigned int, bool)>
+#define CONNECTED_CALLBACK_SIGNATURE std::function<void(unsigned int)>
+
+class MqttClient {
+private:
+  // Clients
+  WiFiClient wifiClient;      // WiFi Client
+  AsyncMqttClient mqttClient; // MQTT Client
+
+  // Intervals
+  Interval keepAliveInterval =
+      DEFAULT_KEEP_ALIVE_INTERVAL; // Controls how often the WiFi and MQTT
+                                   // status is checked
+
+  // Callbacks
+  CONNECTING_CALLBACK_SIGNATURE connectingCallback =
+      NULL; // Called without delay while connection is being established
+  CONNECTED_CALLBACK_SIGNATURE connectedCallback =
+      NULL; // Called once for every time a connection is reestablished
+
+  // State
+  bool firstCheck = true; // Indicates if the connection is checked for the
+                          // first time since booting
+  bool connecting = true; // Indicates if the client is currently attempting to
+                          // connect to WiFi or the MQTT broker
+
+  // Configuration
+  char *clientName; // Name of the client on the MQTT broker server
+
+  /**
+   * Called by the loop function to keep the connection alive
+   * @param now The current timestamp
+   */
+  void keepAlive(unsigned int now);
+
+public:
+  /**
+   * Initalize an MqttClient
+   * @param clientName The name of the MQTT client
+   */
+  MqttClient(const char *clientName);
+
+  /**
+   * Setup the WiFi and PubSubClient settings
+   */
+  MqttClient &setup();
+
+  /**
+   * Override the default keep alive interval in milliseconds
+   * @param keepAliveInterval An interval in milliseconds
+   */
+  MqttClient &setKeepAliveInterval(int keepAliveInterval);
+
+  /**
+   * Set the callback for connecting events
+   * @param cb The callback function
+   */
+  MqttClient &onConnecting(CONNECTING_CALLBACK_SIGNATURE cb);
+
+  /**
+   * Set the callback for connected events
+   * @param cb The callback function
+   */
+  MqttClient &onConnected(CONNECTED_CALLBACK_SIGNATURE cb);
+
+  /**
+   * Primary loop function to keep the connection alive and process MQTT topic
+   * subscriptions (returns true if the client is active)
+   * @param now The current timestamp (use millis() function)
+   */
+  bool loop(unsigned int now);
+};
+
+#endif
