@@ -48,9 +48,8 @@ bool MqttClient::loop(unsigned int now) {
         justDisconnected = true;
         Serial.println("WiFi Disconnected");
         Serial.println("Attempting to Connect...");
-      } else {
-        WiFi.reconnect();
       }
+      WiFi.reconnect();
     }
     if (firstCheck) {
       firstCheck = false;
