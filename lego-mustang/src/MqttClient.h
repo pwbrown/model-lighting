@@ -1,48 +1,41 @@
 #ifndef MQTT_CLIENT_H
 #define MQTT_CLIENT_H
 
-#include <Interval.h>
+#include "Interval.h"
 #include <PubSubClient.h>
 #include <WiFi.h>
 #include <functional>
 
-#define CONNECTING_CALLBACK_SIGNATURE                                          \
-  std::function<void(unsigned int now, bool first)> connectingCallback
-#define CONNECTED_CALLBACK_SIGNATURE                                           \
-  std::function<void(unsigned int now)> connectedCallback
+#define DEFAULT_CONNECTION_CHECK_INTERVAL 1000
+#define CONNECTING_CALLBACK_SIGNATURE std::function<void(unsigned int, bool)>
+#define CONNECTED_CALLBACK_SIGNATURE std::function<void(unsigned int)>
 
 class MqttClient {
 private:
   // Clients
   WiFiClient wifiClient;   // WiFi Client
   PubSubClient mqttClient; // MQTT Client
-  char *clientName;        // MQTT Client Name
-
-  // Event Callbacks
-  CONNECTING_CALLBACK_SIGNATURE =
-      NULL;                            // Called when actively trying to connect
-  CONNECTED_CALLBACK_SIGNATURE = NULL; // Called once for every time a
-                                       // connection is reestablished
 
   // Intervals
-  Interval connInterval;
+  Interval connectionCheckInterval;
+
+  // Callbacks
+  CONNECTING_CALLBACK_SIGNATURE connectingCallback = NULL;
+  CONNECTED_CALLBACK_SIGNATURE connectedCallback = NULL;
 
   // State
-  bool isConnecting = true;
-
-  // Connection status checks
-  bool wifiConnected();
-  bool mqttConnected();
+  bool firstCheck = true;
+  bool connecting = true;
 
 public:
-  MqttClient(char *clientName);
-  MqttClient(char *clientName, int check_interval);
+  MqttClient();
+  MqttClient(int checkInterval);
 
-  MqttClient &setup(char *wifiSsid, char *wifiPassword, char *mqttHost,
-                    int mqttPort);
+  void setup();
 
-  MqttClient &onConnecting(CONNECTING_CALLBACK_SIGNATURE);
-  MqttClient &onConnected(CONNECTED_CALLBACK_SIGNATURE);
+  void onConnecting(CONNECTING_CALLBACK_SIGNATURE);
+
+  void onConnected(CONNECTED_CALLBACK_SIGNATURE);
 
   bool loop(unsigned int now);
 };

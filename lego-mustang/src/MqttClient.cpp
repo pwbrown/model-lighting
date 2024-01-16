@@ -1,81 +1,67 @@
 #include "MqttClient.h"
+#include <Secrets.h>
 
-// Initialize WiFi and MQTT clients
-MqttClient::MqttClient(char *clientName) {
+MqttClient::MqttClient() {
   wifiClient = WiFiClient();
   mqttClient = PubSubClient(wifiClient);
-  connInterval = Interval();
-  this->clientName = clientName;
+  connectionCheckInterval = Interval(DEFAULT_CONNECTION_CHECK_INTERVAL);
 }
 
-// Initialize WiFi and MQTT clients with custom check interval
-MqttClient::MqttClient(char *clientName, int check_interval) {
+MqttClient::MqttClient(int check_interval) {
   wifiClient = WiFiClient();
   mqttClient = PubSubClient(wifiClient);
-  connInterval = Interval(check_interval);
-  this->clientName = clientName;
+  connectionCheckInterval = Interval(check_interval);
 }
 
-// Setup starts the WiFi connection and sets the MQTT server details
-MqttClient &MqttClient::setup(char *wifiSsid, char *wifiPassword,
-                              char *mqttHost, int mqttPort) {
-  WiFi.begin(wifiSsid, wifiPassword);
-  mqttClient.setServer(mqttHost, mqttPort);
-
-  return *this;
+void MqttClient::setup() {
+  // Ensure WiFi is running in station mode
+  WiFi.mode(WIFI_STA);
+  // Begin the WiFi connection using secrets values
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 }
 
-// Register a callback for connecting events
-MqttClient &MqttClient::onConnecting(CONNECTING_CALLBACK_SIGNATURE) {
-  this->connectingCallback = connectingCallback;
-
-  return *this;
+void MqttClient::onConnecting(CONNECTING_CALLBACK_SIGNATURE cb) {
+  connectingCallback = cb;
 }
 
-// Register a callback for connected events
-MqttClient &MqttClient::onConnected(CONNECTED_CALLBACK_SIGNATURE) {
-  this->connectedCallback = connectedCallback;
-
-  return *this;
+void MqttClient::onConnected(CONNECTED_CALLBACK_SIGNATURE cb) {
+  connectedCallback = cb;
 }
 
-// Checks if the WiFi connection is up
-bool MqttClient::wifiConnected() { return WiFi.status() == WL_CONNECTED; }
-
-// Checks if the MQTT connection is up and attempts to reconnect
-bool MqttClient::mqttConnected() {
-  return mqttClient.connected() || mqttClient.connect(clientName);
-}
-
-// Designed to by called by the loop method to maintain a connection
-// and listen for MQTT messages
 bool MqttClient::loop(unsigned int now) {
-  bool first = false; // Indicates if the connection function is called for the
-                      // first time since disconnecting
-  // Check for connection status on an interval
-  if (connInterval.check(now)) {
-    if (wifiConnected() && mqttConnected()) {
-      if (isConnecting) {
-        isConnecting = false;
-        Serial.println("MQTT Client Connected");
+  bool justDisconnected = false;
+  if (connectionCheckInterval.check(now)) {
+    bool wifiOk = WiFi.status() == WL_CONNECTED;
+    if (wifiOk) {
+      if (connecting) {
+        connecting = false;
+        Serial.println("WiFi Connection Established");
+        Serial.print("Local IP: ");
+        Serial.println(WiFi.localIP());
         if (connectedCallback != NULL) {
           connectedCallback(now);
         }
       }
-    } else if (!isConnecting) {
-      isConnecting = true;
-      first = true;
-      Serial.println("MQTT Client Disconnected");
-      Serial.print("Attempting to Reconnect.");
+    } else {
+      if (!connecting || firstCheck) {
+        connecting = true;
+        justDisconnected = true;
+        Serial.println("WiFi Disconnected");
+        Serial.println("Attempting to Connect...");
+      } else {
+        WiFi.reconnect();
+      }
+    }
+    if (firstCheck) {
+      firstCheck = false;
     }
   }
-  // Report connecting status or run MQTT client loop
-  if (isConnecting) {
+  if (connecting) {
     if (connectingCallback != NULL) {
-      connectingCallback(now, first);
+      connectingCallback(now, justDisconnected);
     }
     return false;
   } else {
-    return true; // mqttClient.loop();
+    return true;
   }
 }
