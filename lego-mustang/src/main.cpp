@@ -134,7 +134,7 @@ void setRightTail3(std::string state) {
   } else {
     rightTail3.off();
   }
-  client.publish("/lego/mustang/right_taillight_3/state", leftTail3State);
+  client.publish("/lego/mustang/right_taillight_3/state", rightTail3State);
 }
 
 void app_main(void) {
