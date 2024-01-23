@@ -1,0 +1,257 @@
+#include "MqttClient.h"
+#include "esp_event.h"
+#include "esp_log.h"
+#include "esp_wifi.h"
+#include "mqtt_client.h"
+#include "nvs_flash.h"
+#include <Secrets.h>
+#include <any>
+#include <string>
+
+#define log(format, __VA_ARGS__...)                                            \
+  ESP_LOGI(MQTT_CLIENT_TAG, format, __VA_ARGS__)
+
+/**
+ * Handles forwarding WiFi and MQTT events back to the client. The function is
+ * formatted the way that the event loop handler expects
+ * @param arg This will be an instance of the client
+ * @param eventBase The event's base type
+ * @param eventId The id of the specific event fired
+ * @param eventData The data passed by the specific event
+ */
+void forwardingEventHandler(void *arg, esp_event_base_t eventBase,
+                            int32_t eventId, void *eventData) {
+  // Argument is an instance of the MQTT client
+  MqttClient *client = (MqttClient *)arg;
+  client->__handleEvents__(eventBase, eventId, eventData);
+}
+
+/**
+ * Start the WiFi and MQTT Clients and maintain the connection
+ */
+MqttClient &MqttClient::start() {
+  // Start WiFi client
+  ESP_ERROR_CHECK(esp_wifi_start());
+
+  return *this;
+}
+
+/**
+ * Register connecting callback
+ */
+MqttClient &MqttClient::onConnecting(CALLBACK_SIGNATURE callback) {
+  connectingCallback = callback;
+
+  return *this;
+}
+
+/**
+ * Register connected callback
+ */
+MqttClient &MqttClient::onConnected(CALLBACK_SIGNATURE callback) {
+  connectedCallback = callback;
+
+  return *this;
+}
+
+/**
+ * Indicates if the client is fully connected
+ */
+bool MqttClient::connected(void) { return wifiConnected && mqttConnected; }
+
+/**
+ * Register topic subscription
+ */
+MqttClient &MqttClient::onTopic(std::string topic,
+                                SUBSCRIPTION_CALLBACK callback) {
+  subscriptions[topic] = callback;
+  // If the subscription is made after the client is already connected, initiate
+  // the subscription now
+  if (connected()) {
+    esp_mqtt_client_subscribe(mqttClient, topic.c_str(), 0);
+  }
+
+  return *this;
+}
+
+/**
+ * Publish data on topic
+ */
+MqttClient &MqttClient::publish(std::string topic, std::string data,
+                                bool retain) {
+  if (connected()) {
+    esp_mqtt_client_publish(mqttClient, topic.c_str(), data.c_str(), 0, 1, 0);
+  }
+
+  return *this;
+}
+
+/**
+ * Handles all events from the WiFi and MQTT clients. This PUBLIC function is
+ * called by the forwarding event handler to relay all events back to the
+ * original instance. It is not designed to be called by the end user, but I
+ * made it public to save me time
+ */
+void MqttClient::__handleEvents__(esp_event_base_t eventBase, int32_t eventId,
+                                  void *eventData) {
+  // Handle WiFi Events
+  if (eventBase == WIFI_EVENT && eventId == WIFI_EVENT_STA_START) {
+    // WiFi Station Started Event (can connect now)
+    if (eventId == WIFI_EVENT_STA_START) {
+      log("WiFi Station Ready to Connect");
+      esp_wifi_connect();
+    }
+    // WiFi Station Connected (should be getting an IP soon)
+    else if (eventId == WIFI_EVENT_STA_CONNECTED) {
+      log("WiFi Connected");
+      wifiConnected = true;
+    }
+    // WiFi Station disconnected (attempt to reconnect)
+    else if (eventId == WIFI_EVENT_STA_DISCONNECTED) {
+      log("WiFi Disconnected. Attempting to Reconnect");
+      wifiConnected = false;
+      mqttConnected = false;
+      if (connectingCallback != NULL) {
+        connectingCallback();
+      }
+      esp_wifi_connect();
+    }
+  }
+  // Handle IP Events
+  else if (eventBase == IP_EVENT && eventId == IP_EVENT_STA_GOT_IP) {
+    ip_event_got_ip_t *event = (ip_event_got_ip_t *)eventData;
+    log("Got IP: " IPSTR, IP2STR(&event->ip_info.ip));
+    wifiConnected = true;
+    // Start the MQTT Client connection
+    esp_mqtt_client_start(mqttClient);
+  }
+  // Handle MQTT events
+  else {
+    esp_mqtt_event_handle_t event = (esp_mqtt_event_handle_t)eventData;
+
+    // MQTT Client Connected (establish subscriptions)
+    if (eventId == MQTT_EVENT_CONNECTED) {
+      log("MQTT Client Connected");
+      mqttConnected = true;
+      if (connectedCallback != NULL) {
+        connectedCallback();
+      }
+      // Iterate over all subscription keys (topics) and subscribe to them
+      for (SUBSCRIPTION_MAP::iterator iter = subscriptions.begin();
+           iter != subscriptions.end(); ++iter) {
+        esp_mqtt_client_subscribe_single(mqttClient, iter->first.c_str(), 0);
+      }
+    }
+    // MQTT Client Disconnected (wait for reconnect)
+    else if (eventId == MQTT_EVENT_DISCONNECTED) {
+      log("MQTT Client Disconnected");
+      mqttConnected = false;
+      if (connectingCallback != NULL) {
+        connectingCallback();
+      }
+    }
+    // Data received for subscribed topic
+    else if (eventId == MQTT_EVENT_DATA) {
+      std::string topic;
+      topic.assign(event->topic, (size_t)event->topic_len);
+      // Execute subscription callback if available
+      if (subscriptions.contains(topic)) {
+        std::string data;
+        data.assign(event->data, (size_t)event->data_len);
+        subscriptions.at(topic)(data);
+      }
+    }
+    // MQTT Error
+    else if (eventId == MQTT_EVENT_ERROR) {
+      log("Error");
+    }
+  }
+}
+
+/**
+ * Configure and setup Non Volatile Storage for use by the WiFi client to save
+ * configuration
+ */
+void MqttClient::configureNvs(void) {
+  // Initialize and clear NVS if possible
+  esp_err_t ret = nvs_flash_init();
+  if (ret == ESP_ERR_NVS_NO_FREE_PAGES ||
+      ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+    ESP_ERROR_CHECK(nvs_flash_erase());
+    ret = nvs_flash_init();
+  }
+  ESP_ERROR_CHECK(ret);
+}
+
+/**
+ * Setup and configure WiFi client and listen to events
+ */
+void MqttClient::configureWifi(void) {
+  // Initialize NETIF (abstraction layer for TCP/IP)
+  ESP_ERROR_CHECK_WITHOUT_ABORT(esp_netif_init());
+
+  // Create the default event loop to handle WiFi events
+  ESP_ERROR_CHECK_WITHOUT_ABORT(esp_event_loop_create_default());
+
+  // Initialize default WiFi Station
+  esp_netif_create_default_wifi_sta();
+
+  // Initialize WiFi with the default config
+  wifi_init_config_t defaultConfig = WIFI_INIT_CONFIG_DEFAULT();
+  ESP_ERROR_CHECK(esp_wifi_init(&defaultConfig));
+
+  // Register WiFi events to handler (listens for connection state)
+  ESP_ERROR_CHECK(esp_event_handler_instance_register(
+      WIFI_EVENT, ESP_EVENT_ANY_ID, &forwardingEventHandler, this, NULL));
+
+  // Register IP events to handler (listens for IP assignment)
+  ESP_ERROR_CHECK(esp_event_handler_instance_register(
+      IP_EVENT, IP_EVENT_STA_GOT_IP, &forwardingEventHandler, this, NULL));
+
+  // Update WiFi mode and config
+  wifi_config_t wifiConfig = {
+      .sta =
+          {
+              .ssid = WIFI_SSID,
+              .password = WIFI_PASSWORD,
+          },
+  };
+  ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+  ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifiConfig));
+}
+
+/**
+ * Setup and configure MQTT client and listen to events
+ */
+void MqttClient::configureMqtt(const char *clientId) {
+  // Configure and initialize MQTT client
+  esp_mqtt_client_config_t mqttConfig = {
+      .broker =
+          {
+              .address =
+                  {
+                      .hostname = MQTT_HOST,
+                      .transport = MQTT_TRANSPORT_OVER_TCP,
+                      .port = MQTT_PORT,
+                  },
+          },
+      .credentials = {.client_id = clientId},
+  };
+  mqttClient = esp_mqtt_client_init(&mqttConfig);
+
+  // Register MQTT events to handler
+  esp_mqtt_client_register_event(mqttClient,
+                                 (esp_mqtt_event_id_t)ESP_EVENT_ANY_ID,
+                                 &forwardingEventHandler, this);
+}
+
+/**
+ * Configure all clients and services
+ */
+MqttClient &MqttClient::configure(const char *clientId) {
+  configureNvs();
+  configureWifi();
+  configureMqtt(clientId);
+
+  return *this;
+}

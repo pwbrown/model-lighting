@@ -11,16 +11,34 @@ private:
   bool isSetup = false; // Indicates if the light has been setup
 
 public:
-  // Set light pin and PWM channel
+  /**
+   * Called before any dimmable light has been configured to setup the
+   * reusable global PWM timer
+   */
+  static void configureGlobalTimer();
+
+  /**
+   * Initialize new dimmable light on the specified
+   * GPIO pin and PWM channel
+   * @param pin GPIO pin to use for the light
+   * @param channel PWM channel to use for the light
+   */
   DimmableLight(int pin, int channel);
 
-  // Setup light's PWM channel and pin
-  void setup();
+  /**
+   * Configure the light's PWM channel
+   */
+  void configure();
 
-  // Turn on light to a specific brightness
-  void on(int brightness = 255) const;
+  /**
+   * Turn on the light to a specific brightness
+   * @param brigtness percentage value from 0 to 100
+   */
+  void on(int brightness = 100) const;
 
-  // Turn off light
+  /**
+   * Turn off the light
+   */
   void off() const;
 };
 

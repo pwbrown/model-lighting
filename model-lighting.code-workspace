@@ -1,0 +1,79 @@
+{
+  "folders": [
+    {
+      "name": "Lego Mustang",
+      "path": "lego-mustang",
+    },
+    {
+      "name": "Shared Libraries",
+      "path": "shared",
+    },
+    {
+      "name": "Docker Compose",
+      "path": "docker",
+    }
+  ],
+  "settings": {
+    "editor.defaultFormatter": "xaver.clang-format",
+    "editor.formatOnSave": true,
+    "files.associations": {
+      "any": "cpp",
+      "array": "cpp",
+      "atomic": "cpp",
+      "bit": "cpp",
+      "*.tcc": "cpp",
+      "cctype": "cpp",
+      "clocale": "cpp",
+      "cmath": "cpp",
+      "compare": "cpp",
+      "concepts": "cpp",
+      "cstdarg": "cpp",
+      "cstddef": "cpp",
+      "cstdint": "cpp",
+      "cstdio": "cpp",
+      "cstdlib": "cpp",
+      "cwchar": "cpp",
+      "cwctype": "cpp",
+      "deque": "cpp",
+      "map": "cpp",
+      "set": "cpp",
+      "string": "cpp",
+      "unordered_map": "cpp",
+      "vector": "cpp",
+      "exception": "cpp",
+      "algorithm": "cpp",
+      "functional": "cpp",
+      "iterator": "cpp",
+      "memory": "cpp",
+      "memory_resource": "cpp",
+      "numeric": "cpp",
+      "random": "cpp",
+      "string_view": "cpp",
+      "system_error": "cpp",
+      "tuple": "cpp",
+      "type_traits": "cpp",
+      "utility": "cpp",
+      "initializer_list": "cpp",
+      "iosfwd": "cpp",
+      "istream": "cpp",
+      "limits": "cpp",
+      "new": "cpp",
+      "numbers": "cpp",
+      "ostream": "cpp",
+      "sstream": "cpp",
+      "stdexcept": "cpp",
+      "streambuf": "cpp",
+      "cinttypes": "cpp",
+      "typeinfo": "cpp",
+      "cstring": "cpp"
+    },
+  },
+  "extensions": {
+    "recommendations": [
+      "platformio.platformio-ide"
+    ],
+    "unwantedRecommendations": [
+        "ms-vscode.cpptools-extension-pack"
+    ]
+  }
+}

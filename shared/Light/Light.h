@@ -12,7 +12,7 @@ public:
   Light(int pin);
 
   // Setup light's GPIO pin
-  void setup();
+  void configure();
 
   // Turn on light to full brightness
   void on();
