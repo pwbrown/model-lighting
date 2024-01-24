@@ -19,19 +19,22 @@ void Light::configure() {
 
 // Turn on light to full brightness
 void Light::on() {
-  isOn = true;
+  _isOn = true;
   gpio_set_level(PIN, 1);
 };
 
 // Turn off light
 void Light::off() {
-  isOn = false;
+  _isOn = false;
   gpio_set_level(PIN, 0);
 };
 
+// Indicates if the light is on
+bool Light::isOn(void) { return _isOn; }
+
 // Toggles the state of the light
 void Light::toggle() {
-  if (isOn) {
+  if (_isOn) {
     off();
   } else {
     on();

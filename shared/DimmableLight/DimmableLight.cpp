@@ -35,14 +35,18 @@ void DimmableLight::configure() {
   }
 };
 
-void DimmableLight::on(int brightness) const {
+void DimmableLight::on(int brightness) {
   double percentage = brightness == 0 ? 0.0 : brightness / 100.0;
   double duty = 8192 * percentage;
   ledc_set_duty(LEDC_MODE, LEDC_CHANNEL, duty);
   ledc_update_duty(LEDC_MODE, LEDC_CHANNEL);
+  _isOn = true;
 };
 
-void DimmableLight::off() const {
+void DimmableLight::off() {
   ledc_set_duty(LEDC_MODE, LEDC_CHANNEL, 0);
   ledc_update_duty(LEDC_MODE, LEDC_CHANNEL);
+  _isOn = false;
 };
+
+bool DimmableLight::isOn(void) { return _isOn; }

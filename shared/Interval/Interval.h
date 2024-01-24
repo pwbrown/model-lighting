@@ -1,8 +1,6 @@
 #ifndef INTERVAL_H
 #define INTERVAL_H
 
-#include <Arduino.h>
-
 #define DEFAULT_CHECK_INTERVAL 1000
 
 class Interval {
@@ -17,18 +15,12 @@ public:
   Interval(int checkInterval) : checkInterval{checkInterval} {};
 
   // Reset the interval to synchronize with a new timestamp
-  void reset(unsigned int now) {
-    lastChecked = now;
-    firstCheck = true;
-  }
+  void reset() { firstCheck = true; }
 
   // Check if the interval time has passed. Must pass timestamp in milliseconds
   bool check(unsigned int now) {
-    if (firstCheck) {
+    if (firstCheck || now - lastChecked >= checkInterval) {
       firstCheck = false;
-      return true;
-    }
-    if (now - lastChecked >= checkInterval) {
       lastChecked = now;
       return true;
     }

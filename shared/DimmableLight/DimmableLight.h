@@ -9,6 +9,7 @@ private:
   int pin;              // GPIO pin number
   int channel;          // PWM Channel
   bool isSetup = false; // Indicates if the light has been setup
+  bool _isOn = false;   // Indicates if the light is on
 
 public:
   /**
@@ -34,12 +35,17 @@ public:
    * Turn on the light to a specific brightness
    * @param brigtness percentage value from 0 to 100
    */
-  void on(int brightness = 100) const;
+  void on(int brightness = 100);
 
   /**
    * Turn off the light
    */
-  void off() const;
+  void off();
+
+  /**
+   * Indicates if the light is currently on
+   */
+  bool isOn(void);
 };
 
 #endif

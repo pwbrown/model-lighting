@@ -5,7 +5,7 @@ class Light {
 private:
   int pin;
   bool isSetup = false;
-  bool isOn = false;
+  bool _isOn = false;
 
 public:
   // Set light pin
@@ -19,6 +19,9 @@ public:
 
   // Turn off light
   void off();
+
+  // Check if the light is on
+  bool isOn(void);
 
   // Toggle light on or off
   void toggle();
