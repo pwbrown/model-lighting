@@ -4,28 +4,47 @@
 #define DEFAULT_CHECK_INTERVAL 1000
 
 class Interval {
-private:
-  int checkInterval = DEFAULT_CHECK_INTERVAL;
-  unsigned int lastChecked = 0;
-  bool firstCheck = true;
-
 public:
-  Interval(){};
-  // Initialize interval with a custom check interval in milliseconds
-  Interval(int checkInterval) : checkInterval{checkInterval} {};
+  /**
+   * Initialize with the default check interval
+   */
+  Interval(void){};
 
-  // Reset the interval to synchronize with a new timestamp
-  void reset() { firstCheck = true; }
+  /**
+   * Initialize with a custom check interval
+   */
+  Interval(int checkInterval) : _checkInterval{checkInterval} {};
 
-  // Check if the interval time has passed. Must pass timestamp in milliseconds
+  /**
+   * Reset the internal state and update the check interval if necessary
+   * @param checkInterval New check interval (passing nothing keeps the previous
+   * interval in place)
+   */
+  void reset(int checkInterval = -1) {
+    if (checkInterval >= 0) {
+      _checkInterval = checkInterval;
+    }
+    _firstCheck = true;
+  }
+
+  /**
+   * Check if the interval time has passed. Must pass current timestamp in
+   * milliseconds
+   * @param now Current timestamp in milliseconds
+   */
   bool check(unsigned int now) {
-    if (firstCheck || now - lastChecked >= checkInterval) {
-      firstCheck = false;
-      lastChecked = now;
+    if (_firstCheck || now - _lastChecked >= _checkInterval) {
+      _firstCheck = false;
+      _lastChecked = now;
       return true;
     }
     return false;
   };
+
+private:
+  int _checkInterval = DEFAULT_CHECK_INTERVAL;
+  unsigned int _lastChecked = 0;
+  bool _firstCheck = true;
 };
 
 #endif

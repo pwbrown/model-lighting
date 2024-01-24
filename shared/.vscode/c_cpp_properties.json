@@ -3,6 +3,11 @@
         {
             "name": "PlatformIO",
             "includePath": [
+                "/Users/philipbrown/projects/model-lighting/shared/Interval",
+                "/Users/philipbrown/projects/model-lighting/shared/MqttClient",
+                "/Users/philipbrown/projects/model-lighting/shared/Secrets",
+                "/Users/philipbrown/projects/model-lighting/shared/DimmableLight",
+                "/Users/philipbrown/projects/model-lighting/shared/Light",
                 "/Users/philipbrown/.platformio/packages/framework-espidf/components/xtensa/include",
                 "/Users/philipbrown/.platformio/packages/framework-espidf/components/xtensa/esp32/include",
                 "/Users/philipbrown/.platformio/packages/framework-espidf/components/newlib/platform_include",

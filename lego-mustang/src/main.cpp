@@ -1,42 +1,43 @@
 #include "pins.h"
-#include <BlinkingLight.h>
-#include <DimmableLight.h>
-#include <SequentialLights.h>
-// #include <Light.h>
-#include "esp_timer.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include <MqttClient.h>
-#include <string>
+// #include <BlinkingLight.h>
+// #include <DimmableLight.h>
+// #include <SequentialLights.h>
+// // #include <Light.h>
+// #include <MqttClient.h>
+// #include <string>
+#include <Light.h>
+#include <Utils.h>
 
 extern "C" {
 void app_main(void);
 }
 
+Light testLight(2, 0);
+
 // MQTT Client for communication
-MqttClient client;
+// MqttClient client;
 
-// Dimmable Lights
-DimmableLight leftHeadlight(LEFT_HEADLIGHT, 0);
-DimmableLight rightHeadlight(RIGHT_HEADLIGHT, 1);
-DimmableLight leftOuterTaillight(LEFT_OUTER_TAILLIGHT, 2);
-DimmableLight leftMiddleTaillight(LEFT_MIDDLE_TAILLIGHT, 3);
-DimmableLight leftInnerTaillight(LEFT_INNER_TAILLIGHT, 4);
-DimmableLight rightOuterTaillight(RIGHT_OUTER_TAILLIGHT, 5);
-DimmableLight rightMiddleTaillight(RIGHT_MIDDLE_TAILLIGHT, 6);
-DimmableLight rightInnerTaillight(RIGHT_INNER_TAILLIGHT, 7);
+// // Dimmable Lights
+// DimmableLight leftHeadlight(LEFT_HEADLIGHT, 0);
+// DimmableLight rightHeadlight(RIGHT_HEADLIGHT, 1);
+// DimmableLight leftOuterTaillight(LEFT_OUTER_TAILLIGHT, 2);
+// DimmableLight leftMiddleTaillight(LEFT_MIDDLE_TAILLIGHT, 3);
+// DimmableLight leftInnerTaillight(LEFT_INNER_TAILLIGHT, 4);
+// DimmableLight rightOuterTaillight(RIGHT_OUTER_TAILLIGHT, 5);
+// DimmableLight rightMiddleTaillight(RIGHT_MIDDLE_TAILLIGHT, 6);
+// DimmableLight rightInnerTaillight(RIGHT_INNER_TAILLIGHT, 7);
 
-// Blinking Lights
-BlinkingLight leftHeadlightBlinking(leftHeadlight, 500);
-BlinkingLight rightHeadlightBlinking(rightHeadlight, 500);
+// // Blinking Lights
+// BlinkingLight leftHeadlightBlinking(leftHeadlight, 500);
+// BlinkingLight rightHeadlightBlinking(rightHeadlight, 500);
 
-// Sequential Lights
-SequentialLights leftTaillightSequential(leftOuterTaillight,
-                                         leftMiddleTaillight,
-                                         leftInnerTaillight, 500, 100);
-SequentialLights rightTaillightSequential(rightOuterTaillight,
-                                          rightMiddleTaillight,
-                                          rightInnerTaillight, 500, 100);
+// // Sequential Lights
+// SequentialLights leftTaillightSequential(leftOuterTaillight,
+//                                          leftMiddleTaillight,
+//                                          leftInnerTaillight, 500, 100);
+// SequentialLights rightTaillightSequential(rightOuterTaillight,
+//                                           rightMiddleTaillight,
+//                                           rightInnerTaillight, 500, 100);
 
 // // Non-Dimmable Lights
 // Light fogLights(FOG_LIGHTS);
@@ -54,59 +55,61 @@ SequentialLights rightTaillightSequential(rightOuterTaillight,
 //   rightInnerTaillight.configure();
 // }
 
-bool hazardsOn = false;
+// bool hazardsOn = false;
 
-void turnOnHazards(void) {
-  hazardsOn = true;
-  leftHeadlightBlinking.startBlinking(50);
-  rightHeadlightBlinking.startBlinking(50);
-  leftTaillightSequential.startBlinking(50);
-  rightTaillightSequential.startBlinking(50);
-}
+// void turnOnHazards(void) {
+//   hazardsOn = true;
+//   leftHeadlightBlinking.startBlinking(50);
+//   rightHeadlightBlinking.startBlinking(50);
+//   leftTaillightSequential.startBlinking(50);
+//   rightTaillightSequential.startBlinking(50);
+// }
 
-void turnOffHazards(void) {
-  hazardsOn = false;
-  leftHeadlightBlinking.off();
-  rightHeadlightBlinking.off();
-  leftTaillightSequential.off();
-  rightTaillightSequential.off();
-}
+// void turnOffHazards(void) {
+//   hazardsOn = false;
+//   leftHeadlightBlinking.off();
+//   rightHeadlightBlinking.off();
+//   leftTaillightSequential.off();
+//   rightTaillightSequential.off();
+// }
 
-void setHazardState(std::string state) {
-  if (state == "ON" && !hazardsOn) {
-    turnOnHazards();
-  } else if (state != "ON" && hazardsOn) {
-    turnOffHazards();
-  }
-  client.publish("/lego/mustang/hazards/state", hazardsOn ? "ON" : "OFF");
-}
+// void setHazardState(std::string state) {
+//   if (state == "ON" && !hazardsOn) {
+//     turnOnHazards();
+//   } else if (state != "ON" && hazardsOn) {
+//     turnOffHazards();
+//   }
+//   client.publish("/lego/mustang/hazards/state", hazardsOn ? "ON" : "OFF");
+// }
 
 void loop(unsigned int now) {
-  leftHeadlightBlinking.loop(now);
-  rightHeadlightBlinking.loop(now);
-  leftTaillightSequential.loop(now);
-  rightTaillightSequential.loop(now);
+  // leftHeadlightBlinking.loop(now);
+  // rightHeadlightBlinking.loop(now);
+  // leftTaillightSequential.loop(now);
+  // rightTaillightSequential.loop(now);
+  testLight.loop(now);
 }
 
 void app_main(void) {
   // Start MQTT Client
-  client.configure("LegoMustang")
-      .onTopic("/lego/mustang/hazards/set", &setHazardState)
-      .start();
+  // client.configure("LegoMustang")
+  //     .onTopic("/lego/mustang/hazards/set", &setHazardState)
+  //     .start();
 
-  // Setup Lights and Effects
-  DimmableLight::configureGlobalTimer();
-  leftHeadlightBlinking.configure();
-  rightHeadlightBlinking.configure();
-  leftTaillightSequential.configure();
-  rightTaillightSequential.configure();
+  // // Setup Lights and Effects
+  // DimmableLight::configureGlobalTimer();
+  // leftHeadlightBlinking.configure();
+  // rightHeadlightBlinking.configure();
+  // leftTaillightSequential.configure();
+  // rightTaillightSequential.configure();
+
+  Light::configurePWMTimer();
+
+  testLight.configure();
+  testLight.blink(500, 100, 10);
 
   // Start main loop
-  while (1) {
-    vTaskDelay(1);
-    unsigned int now = esp_timer_get_time() / 1000;
-    loop(now);
-  }
+  Utils::startLoop(&loop);
 
   // leftHeadlight.configure();
   // rightHeadlight.configure();
