@@ -1,133 +1,85 @@
+#include "cJSON.h"
 #include "pins.h"
-// #include <BlinkingLight.h>
-// #include <DimmableLight.h>
-// #include <SequentialLights.h>
-// // #include <Light.h>
-// #include <MqttClient.h>
-// #include <string>
+#include <Enums.h>
 #include <Light.h>
+#include <MqttClient.h>
+#include <SequentialLightGroup.h>
 #include <Utils.h>
 
+// Export main function for C compiler
 extern "C" {
 void app_main(void);
 }
 
-Light testLight(2, 0);
+// ********************* STATES *********************
+Enums::LightMode lightMode = Enums::LightMode::Off;
 
-// MQTT Client for communication
-// MqttClient client;
+// ********************* MQTT CLIENT SETUP *********************
+MqttClient client; // MQTT Client
 
-// // Dimmable Lights
-// DimmableLight leftHeadlight(LEFT_HEADLIGHT, 0);
-// DimmableLight rightHeadlight(RIGHT_HEADLIGHT, 1);
-// DimmableLight leftOuterTaillight(LEFT_OUTER_TAILLIGHT, 2);
-// DimmableLight leftMiddleTaillight(LEFT_MIDDLE_TAILLIGHT, 3);
-// DimmableLight leftInnerTaillight(LEFT_INNER_TAILLIGHT, 4);
-// DimmableLight rightOuterTaillight(RIGHT_OUTER_TAILLIGHT, 5);
-// DimmableLight rightMiddleTaillight(RIGHT_MIDDLE_TAILLIGHT, 6);
-// DimmableLight rightInnerTaillight(RIGHT_INNER_TAILLIGHT, 7);
+void setupMqttClient() {}
 
-// // Blinking Lights
-// BlinkingLight leftHeadlightBlinking(leftHeadlight, 500);
-// BlinkingLight rightHeadlightBlinking(rightHeadlight, 500);
+// PWM Channel incremental (increment every time it is used)
+int pwmChannel = 0;
 
-// // Sequential Lights
-// SequentialLights leftTaillightSequential(leftOuterTaillight,
-//                                          leftMiddleTaillight,
-//                                          leftInnerTaillight, 500, 100);
-// SequentialLights rightTaillightSequential(rightOuterTaillight,
-//                                           rightMiddleTaillight,
-//                                           rightInnerTaillight, 500, 100);
+// Left Headlight
+Light leftHeadlight(LEFT_HEADLIGHT, pwmChannel++);
 
-// // Non-Dimmable Lights
-// Light fogLights(FOG_LIGHTS);
-// Light runningLights(RUNNING_LIGHTS);
-// Light interiorLights(INTERIOR_LIGHTS);
+// Right Headlight
+Light rightHeadlight(RIGHT_HEADLIGHT, pwmChannel++);
 
-// void configureLights(void) {
-//   leftHeadlight.configure();
-//   rightHeadlight.configure();
-//   leftOuterTaillight.configure();
-//   leftMiddleTaillight.configure();
-//   leftInnerTaillight.configure();
-//   rightOuterTaillight.configure();
-//   rightMiddleTaillight.configure();
-//   rightInnerTaillight.configure();
-// }
+// Left Taillight
+Light leftInnerTaillight(LEFT_INNER_TAILLIGHT, pwmChannel++);
+Light leftMiddleTaillight(LEFT_MIDDLE_TAILLIGHT, pwmChannel++);
+Light leftOuterTaillight(LEFT_OUTER_TAILLIGHT, pwmChannel++);
+SequentialLightGroup leftTaillight(leftInnerTaillight, leftMiddleTaillight,
+                                   leftOuterTaillight);
 
-// bool hazardsOn = false;
+// Right Taillight
+Light rightInnerTaillight(RIGHT_INNER_TAILLIGHT, pwmChannel++);
+Light rightMiddleTaillight(RIGHT_MIDDLE_TAILLIGHT, pwmChannel++);
+Light rightOuterTaillight(RIGHT_OUTER_TAILLIGHT, pwmChannel++);
+SequentialLightGroup rightTaillight(rightInnerTaillight, rightMiddleTaillight,
+                                    rightOuterTaillight);
 
-// void turnOnHazards(void) {
-//   hazardsOn = true;
-//   leftHeadlightBlinking.startBlinking(50);
-//   rightHeadlightBlinking.startBlinking(50);
-//   leftTaillightSequential.startBlinking(50);
-//   rightTaillightSequential.startBlinking(50);
-// }
+// Other lights
+Light fogLights(FOG_LIGHTS);
+Light runningLights(RUNNING_LIGHTS);
+Light reverseLights(REVERSE_LIGHTS);
+Light interiorLights(INTERIOR_LIGHTS);
 
-// void turnOffHazards(void) {
-//   hazardsOn = false;
-//   leftHeadlightBlinking.off();
-//   rightHeadlightBlinking.off();
-//   leftTaillightSequential.off();
-//   rightTaillightSequential.off();
-// }
-
-// void setHazardState(std::string state) {
-//   if (state == "ON" && !hazardsOn) {
-//     turnOnHazards();
-//   } else if (state != "ON" && hazardsOn) {
-//     turnOffHazards();
-//   }
-//   client.publish("/lego/mustang/hazards/state", hazardsOn ? "ON" : "OFF");
-// }
-
-void loop(unsigned int now) {
-  // leftHeadlightBlinking.loop(now);
-  // rightHeadlightBlinking.loop(now);
-  // leftTaillightSequential.loop(now);
-  // rightTaillightSequential.loop(now);
-  testLight.loop(now);
+// Turn off all lights
+void allOff(void) {
+  runningLights.off();
+  fogLights.off();
+  leftHeadlight.off();
+  rightHeadlight.off();
+  interiorLights.off();
+  leftTaillight.off();
+  rightTaillight.off();
+  reverseLights.off();
 }
 
+/**
+ * Main loop function for lighting effects
+ */
+void loop(unsigned int now) {
+  leftHeadlight.loop(now);
+  rightHeadlight.loop(now);
+  leftTaillight.loop(now);
+  rightTaillight.loop(now);
+}
+
+/**
+ * Application entrypoint. Configure lights, MQTT client, and start the main
+ * effects loop
+ */
 void app_main(void) {
-  // Start MQTT Client
-  // client.configure("LegoMustang")
-  //     .onTopic("/lego/mustang/hazards/set", &setHazardState)
-  //     .start();
-
-  // // Setup Lights and Effects
-  // DimmableLight::configureGlobalTimer();
-  // leftHeadlightBlinking.configure();
-  // rightHeadlightBlinking.configure();
-  // leftTaillightSequential.configure();
-  // rightTaillightSequential.configure();
-
   Light::configurePWMTimer();
 
-  testLight.configure();
-  testLight.blink(500, 100, 10);
+  // Turn off all lights at the beginning
+  allOff();
 
   // Start main loop
   Utils::startLoop(&loop);
-
-  // leftHeadlight.configure();
-  // rightHeadlight.configure();
-  // leftTail1.configure();
-  // leftTail2.configure();
-  // leftTail3.configure();
-  // rightTail1.configure();
-  // rightTail2.configure();
-  // rightTail3.configure();
-  // // Initialize MQTT
-  // client.configure("LegoMustang")
-  //     .onTopic("/lego/mustang/left_headlight/set", &setLeft)
-  //     .onTopic("/lego/mustang/right_headlight/set", &setRight)
-  //     .onTopic("/lego/mustang/left_taillight_1/set", &setLeftTail1)
-  //     .onTopic("/lego/mustang/left_taillight_2/set", &setLeftTail2)
-  //     .onTopic("/lego/mustang/left_taillight_3/set", &setLeftTail3)
-  //     .onTopic("/lego/mustang/right_taillight_1/set", &setRightTail1)
-  //     .onTopic("/lego/mustang/right_taillight_2/set", &setRightTail2)
-  //     .onTopic("/lego/mustang/right_taillight_3/set", &setRightTail3)
-  //     .start();
 }

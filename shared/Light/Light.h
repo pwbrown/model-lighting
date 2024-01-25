@@ -3,6 +3,8 @@
 
 #include <Interval.h>
 
+#define DEFAULT_EFFECT_INTERVAL 1000
+
 /**
  * Light is a utility class for interacting with GPIO and PWM LEDs. It comes
  * with easy methods for controlling LED brightness and state as well as
@@ -44,6 +46,9 @@ public:
   /** Indicates if the light is dimmable */
   bool isDimmable() { return _channel >= 0; }
 
+  /** Indicates if the light is currently blinking */
+  bool isBlinking() { return _isBlinking; }
+
   /**
    * Configure the light's pin and pwm channel if necessary
    */
@@ -75,8 +80,8 @@ public:
    * @param highBrightness How bright the light should be in the "high" state
    * @param lowBrightness How bright the light should be in the "low" state
    */
-  void blink(int intervalInMs = 1000, int highBrightness = 100,
-             int lowBrightness = 0);
+  void blink(int intervalInMs = DEFAULT_EFFECT_INTERVAL,
+             int highBrightness = 100, int lowBrightness = 0);
 
   /**
    * Loop function that should be called as frequently as possible to run light
@@ -89,7 +94,7 @@ public:
 private:
   int _pin;                   // GPIO pin
   int _channel = -1;          // PWM channel
-  int _currBrightness = 0;    // Current or previous brightness percentage
+  int _currBrightness = 0;    // Current brightness percentage
   int _prevBrightness = 100;  // Previous brightness percentage
   bool _isConfigured = false; // Indicates if the light has been configured
   bool _isBlinking = false;   // Indicates if the blinking effect is active

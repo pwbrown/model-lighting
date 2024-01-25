@@ -1,4 +1,4 @@
-# Lego Mustang Lighting
+# [Model Lighting](../README.md)/Lego Mustang
 
 This project is one of several designed to apply custom lighting and effects to my lego projects to make them more interactive and remotely controllable.
 

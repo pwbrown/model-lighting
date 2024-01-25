@@ -1,1 +1,20 @@
-{}
+{
+  "$schema": "https://raw.githubusercontent.com/platformio/platformio-core/develop/platformio/assets/schema/library.json",
+  "name": "Utils",
+  "version": "1.0.0",
+  "description": "Utility functions for building projects",
+  "authors": [
+    {
+      "name": "Philip Brown",
+      "email": "pwbrown24@gmail.com",
+      "url": "https://github.com/pwbrown",
+      "maintainer": true
+    }
+  ],
+  "frameworks": [
+    "espidf"
+  ],
+  "platforms": [
+    "espressif32"
+  ]
+}

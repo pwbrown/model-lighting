@@ -6,11 +6,17 @@
 #include <map>
 #include <string>
 
+// Logging tag
 static const char *MQTT_CLIENT_TAG = "mqtt_client";
 
-#define CALLBACK_SIGNATURE std::function<void()>
-#define SUBSCRIPTION_CALLBACK std::function<void(std::string)>
-#define SUBSCRIPTION_MAP std::map<std::string, SUBSCRIPTION_CALLBACK>
+#define CONNECTING_CALLBACK                                                    \
+  std::function<void(bool, bool,                                               \
+                     bool)> // Callback signature for connecting events
+#define SUBSCRIPTION_CALLBACK                                                  \
+  std::function<void(std::string)> // Callback signature for topic subscriptions
+#define SUBSCRIPTION_MAP                                                       \
+  std::map<std::string,                                                        \
+           SUBSCRIPTION_CALLBACK> // Topic subscription map definition
 
 /**
  * MqttClient is an abstraction layer on top of the underlying
@@ -20,68 +26,70 @@ static const char *MQTT_CLIENT_TAG = "mqtt_client";
  */
 class MqttClient {
 public:
+  MqttClient(const char *clientId);
+
   /**
-   * Configures the WiFi and MQTT clients
+   * Configures NVS (non-volatile storage), WiFi, and MQTT
    */
-  MqttClient &configure(const char *clientId);
+  MqttClient &configure(void);
 
   /**
    * Registers the connecting callback
    * @param callback The callback function for connecting events
    */
-  MqttClient &onConnecting(CALLBACK_SIGNATURE callback);
+  MqttClient &onConnecting(CONNECTING_CALLBACK callback);
 
   /**
-   * Registers the connected callback
-   * @param callback The callback function for connected events
-   */
-  MqttClient &onConnected(CALLBACK_SIGNATURE callback);
-
-  /**
-   * Starts the connection process
+   * Starts connecting to WiFi and the MQTT broker
    */
   MqttClient &start(void);
 
   /**
    * Indicates if the client is fully connected to the MQTT broker
    */
-  bool connected(void);
+  bool isConnected(void);
 
   /**
    * Registers a topic subscription for the MQTT client to listen to
+   * @param topic The name of the topic to subscribe to
+   * @param callback A callback to execute when a message on the topic comes in
    */
   MqttClient &onTopic(std::string topic, SUBSCRIPTION_CALLBACK callback);
 
   /**
    * Publish data string on a topic
+   * @param topic The name of the topic to publish to
+   * @param data A data string to send
+   * @param retain Whether the MQTT broker should retain the message
    */
   MqttClient &publish(std::string topic, std::string data, bool retain = false);
 
   /**
-   * Called by the ESP event loop in reponse to background events. Should be
-   * called directly
+   * Called by the ESP event loop in reponse to background WiFi and MQTT events.
+   * Shouldn't be called directly by the user
    */
   void __handleEvents__(esp_event_base_t eventBase, int32_t eventId,
                         void *eventData);
 
 private:
   // Clients
-  esp_mqtt_client_handle_t mqttClient = NULL; // MQTT Client
+  esp_mqtt_client_handle_t _mqttClient = NULL; // MQTT Client
 
   // State
-  bool wifiConnected =
-      false; // Indicates if the client is connected to wifi and has an IP
-  bool mqttConnected =
-      false; // Indicates if the mqtt client is connected to the broker
+  const char *_clientId;       // MQTT Client Id
+  bool _wifiConnected = false; // Indicates if the client is connected to wifi
+                               // and has an IP address
+  bool _ipReceived = false;    // Indicates if an IP address has been received
+  bool _mqttConnected = false; // Indicates if the mqtt client is connected
+                               // to the broker and is ready
+                               // to send and receive messages
 
   // Callbacks
-  CALLBACK_SIGNATURE connectingCallback =
+  CONNECTING_CALLBACK _connectingCallback =
       NULL; // Called without delay while disconnected
-  CALLBACK_SIGNATURE connectedCallback =
-      NULL; // Called once for every time a connection is reestablished
 
   // Subscriptions
-  SUBSCRIPTION_MAP subscriptions;
+  SUBSCRIPTION_MAP _subscriptions; // Holds all subscription callbacks
 
   /** Configure Non Volatile Storage for WiFi configuration */
   void configureNvs(void);
@@ -89,8 +97,20 @@ private:
   /** Configure Wifi client */
   void configureWifi(void);
 
-  /** Configure Mqtt client*/
-  void configureMqtt(const char *clientId);
+  /** Configure Mqtt client */
+  void configureMqtt(void);
+
+  /** Handle WiFi events */
+  void handleWifiEvent(int32_t eventId, void *eventData);
+
+  /** Handle IP events*/
+  void handleIpEvent(int32_t eventId, void *eventData);
+
+  /** Handle MQTT events */
+  void handleMqttEvent(int32_t eventId, void *eventData);
+
+  /** Reports the connecting status through the connecting callback */
+  void reportConnectingStatus(void);
 };
 
 #endif
