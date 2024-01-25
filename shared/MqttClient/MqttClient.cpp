@@ -101,6 +101,7 @@ void MqttClient::handleWifiEvent(int32_t eventId, void *eventData) {
   else if (eventId == WIFI_EVENT_STA_DISCONNECTED) {
     log("WiFi Disconnected. Attempting to Reconnect");
     _wifiConnected = false;
+    _ipReceived = false;
     _mqttConnected = false;
     reportConnectingStatus();
     esp_wifi_connect();
