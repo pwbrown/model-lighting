@@ -103,6 +103,11 @@ void updateLightsFromState(void) {
     leftTaillight.on(LOW_BEAM_BRIGHTNESS);
     rightTaillight.on(LOW_BEAM_BRIGHTNESS);
   }
+  // High Beams
+  if (highBeamState == SWITCH_ON) {
+    leftHeadlight.on(HIGH_BEAM_BRIGHTNESS);
+    rightHeadlight.on(HIGH_BEAM_BRIGHTNESS);
+  }
   // Hazards
   if (hazardState == SWITCH_ON) {
     leftHeadlight.blink(BLINKING_INTERVAL);
@@ -275,6 +280,57 @@ void setHazardState(std::string data) {
   handleSwitchSubscription(data, hazardState);
 }
 
+// Add all topic subscriptions to the MQTT client
+void configureTopicSubscriptions(void) {
+  client.onTopic(SUB_LIGHTING_TOPIC, &setLightState)
+      .onTopic(SUB_HIGH_BEAM_TOPIC, &setHighBeamState)
+      .onTopic(SUB_TURNING_TOPIC, &setTurningState)
+      .onTopic(SUB_REVERSE_TOPIC, &setReverseState)
+      .onTopic(SUB_FOG_TOPIC, &setFogState)
+      .onTopic(SUB_INTERIOR_TOPIC, &setInteriorState)
+      .onTopic(SUB_HAZARD_TOPIC, &setHazardState)
+      .onTopic(SUB_ALL_TOPIC, &setAllLights);
+}
+
+/** Handle MQTT Client Connection State */
+void onConnectionUpdate(bool wifiOk, bool ipOk, bool mqttOk) {
+  /** Resume previous state when client is fully connected */
+  if (client.isConnected()) {
+    updateLightsFromState();
+    publishCurrentState();
+  } else {
+    // Client is disconnected (turn off all lights except headlights and
+    // taillights)
+    fogLights.off();
+    runningLights.off();
+    interiorLights.off();
+    reverseLights.off();
+    // Blink headlights like in the hazard state
+    leftHeadlight.blink(BLINKING_INTERVAL);
+    rightHeadlight.blink(BLINKING_INTERVAL);
+    // WiFi status uses inner taillight
+    if (wifiOk) {
+      leftInnerTaillight.on();
+      rightInnerTaillight.on();
+    } else {
+      leftInnerTaillight.blink(BLINKING_INTERVAL);
+      rightInnerTaillight.blink(BLINKING_INTERVAL);
+    }
+    // IP status uses middle taillight
+    if (ipOk) {
+      leftMiddleTaillight.on();
+      rightMiddleTaillight.on();
+    } else {
+      leftMiddleTaillight.blink(BLINKING_INTERVAL);
+      rightMiddleTaillight.blink(BLINKING_INTERVAL);
+    }
+    // MQTT status uses outer taillight (it will also just be blinking, so this
+    // just helps sync it with the other lights)
+    leftOuterTaillight.blink(BLINKING_INTERVAL);
+    rightOuterTaillight.blink(BLINKING_INTERVAL);
+  }
+}
+
 /**
  * Main loop function for lighting effects
  */
@@ -292,7 +348,15 @@ void loop(unsigned int now) {
 void app_main(void) {
   Light::configurePWMTimer();
 
+  // Set initial light state
   updateLightsFromState();
+
+  // Configure the MQTT client and subscribe to topics
+  client.configure();
+  configureTopicSubscriptions();
+
+  // Listen for client connection events and start the client
+  client.onConnecting(&onConnectionUpdate).start();
 
   // Start main loop
   Utils::startLoop(&loop);

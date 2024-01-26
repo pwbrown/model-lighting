@@ -74,7 +74,7 @@ public:
   void toggle(bool stopEffects = true);
 
   /**
-   * Starts the blinking effect (must call the loop function to continue
+   * Starts the blinking effect. (must call the loop function to continue
    * blinking in the background)
    * @param intervalInMs The interval used to toggle between on and off
    * @param highBrightness How bright the light should be in the "high" state

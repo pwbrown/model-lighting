@@ -109,8 +109,11 @@ private:
   /** Handle MQTT events */
   void handleMqttEvent(int32_t eventId, void *eventData);
 
-  /** Reports the connecting status through the connecting callback */
-  void reportConnectingStatus(void);
+  /**
+   * Updates the current connection status, and reports the connection status if
+   * the new status differs from the current and a callback has been registered
+   */
+  void updateAndReportStatus(bool wifiOk, bool ipOk, bool mqttOk);
 };
 
 #endif

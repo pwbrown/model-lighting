@@ -66,7 +66,8 @@ MqttClient &MqttClient::onTopic(std::string topic,
 MqttClient &MqttClient::publish(std::string topic, std::string data,
                                 bool retain) {
   if (isConnected()) {
-    esp_mqtt_client_publish(_mqttClient, topic.c_str(), data.c_str(), 0, 1, 0);
+    esp_mqtt_client_publish(_mqttClient, topic.c_str(), data.c_str(), 0, 1,
+                            retain ? 1 : 0);
   }
 
   return *this;
@@ -94,16 +95,14 @@ void MqttClient::handleWifiEvent(int32_t eventId, void *eventData) {
   // WiFi Station Connected (should be getting an IP soon)
   else if (eventId == WIFI_EVENT_STA_CONNECTED) {
     log("WiFi Station Connected");
-    _wifiConnected = true;
-    reportConnectingStatus();
+    // Only update wifi status as connected
+    updateAndReportStatus(true, _ipReceived, _mqttConnected);
   }
   // WiFi Station disconnected (attempt to reconnect)
   else if (eventId == WIFI_EVENT_STA_DISCONNECTED) {
     log("WiFi Disconnected. Attempting to Reconnect");
-    _wifiConnected = false;
-    _ipReceived = false;
-    _mqttConnected = false;
-    reportConnectingStatus();
+    // Mark all statuses as disconnected
+    updateAndReportStatus(false, false, false);
     esp_wifi_connect();
   }
 }
@@ -113,9 +112,8 @@ void MqttClient::handleIpEvent(int32_t eventId, void *eventData) {
   if (eventId == IP_EVENT_STA_GOT_IP) {
     ip_event_got_ip_t *event = (ip_event_got_ip_t *)eventData;
     log("Got IP Address: " IPSTR, IP2STR(&event->ip_info.ip));
-    _wifiConnected = true;
-    _ipReceived = true;
-    reportConnectingStatus();
+    // Only report wifi and ip statuses
+    updateAndReportStatus(true, true, _mqttConnected);
     // Start the MQTT Client connection
     esp_mqtt_client_start(_mqttClient);
   }
@@ -128,8 +126,8 @@ void MqttClient::handleMqttEvent(int32_t eventId, void *eventData) {
   // MQTT Client Connected (subscribe/resubscribe to topics)
   if (eventId == MQTT_EVENT_CONNECTED) {
     log("MQTT Client Connected");
-    _mqttConnected = true;
-    reportConnectingStatus();
+    // Only report mqtt status
+    updateAndReportStatus(_wifiConnected, _ipReceived, true);
     // Iterate over all subscription keys (topics) and subscribe to them
     for (SUBSCRIPTION_MAP::iterator iter = _subscriptions.begin();
          iter != _subscriptions.end(); ++iter) {
@@ -139,8 +137,8 @@ void MqttClient::handleMqttEvent(int32_t eventId, void *eventData) {
   // MQTT Client Disconnected (wait to reconnect)
   else if (eventId == MQTT_EVENT_DISCONNECTED) {
     log("MQTT Client Disconnected");
-    _mqttConnected = false;
-    reportConnectingStatus();
+    // Only report MQTT status
+    updateAndReportStatus(_wifiConnected, _ipReceived, false);
   }
   // Data received for subscribed topic
   else if (eventId == MQTT_EVENT_DATA) {
@@ -160,8 +158,17 @@ void MqttClient::handleMqttEvent(int32_t eventId, void *eventData) {
 }
 
 // Report connecting status through callback
-void MqttClient::reportConnectingStatus(void) {
-  if (_connectingCallback != NULL) {
+void MqttClient::updateAndReportStatus(bool wifiOk, bool ipOk, bool mqttOk) {
+  bool wifiChanged = wifiOk != _wifiConnected;
+  bool ipChanged = ipOk != _ipReceived;
+  bool mqttChanged = mqttOk != _mqttConnected;
+  _wifiConnected = wifiOk;
+  _ipReceived = ipOk;
+  _mqttConnected = mqttOk;
+  // Only report status if a callback has been set, and the status actually
+  // changed
+  if (_connectingCallback != NULL &&
+      (wifiChanged || ipChanged || mqttChanged)) {
     _connectingCallback(_wifiConnected, _ipReceived, _mqttConnected);
   }
 }
