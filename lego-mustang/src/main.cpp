@@ -212,6 +212,7 @@ void setAllLights(std::string data) {
   if (data == SWITCH_OFF) {
     lightingState = LIGHT_MODE_OFF;
     highBeamState = SWITCH_OFF;
+    brakingState = SWITCH_OFF;
     turningState = TURNING_OFF;
     reverseState = SWITCH_OFF;
     fogState = SWITCH_OFF;
@@ -221,7 +222,8 @@ void setAllLights(std::string data) {
   // Turn all lights on with no effects
   else if (data == SWITCH_ON) {
     lightingState = LIGHT_MODE_LOW_BEAM;
-    highBeamState = SWITCH_OFF;
+    highBeamState = SWITCH_ON;
+    brakingState = SWITCH_ON;
     turningState = TURNING_OFF;
     reverseState = SWITCH_ON;
     fogState = SWITCH_ON;
