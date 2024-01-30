@@ -138,7 +138,7 @@ void publishCurrentState(void) {
   // Create state object and fill with state values
   cJSON *state = cJSON_CreateObject();
   cJSON_AddStringToObject(state, "lighting", lightingState.c_str());
-  cJSON_AddStringToObject(state, "highBeam", highBeamState.c_str());
+  cJSON_AddStringToObject(state, "high_beam", highBeamState.c_str());
   cJSON_AddStringToObject(state, "turning", turningState.c_str());
   cJSON_AddStringToObject(state, "reverse", reverseState.c_str());
   cJSON_AddStringToObject(state, "fog", fogState.c_str());
