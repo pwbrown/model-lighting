@@ -26,8 +26,9 @@
 
 #define BASE_TOPIC "/lego/mustang/" // The base topic path for all other topics
 
-#define PUB_STATE_TOPIC BASE_TOPIC "state"       // For reporting current state
-#define SUB_LIGHTING_TOPIC BASE_TOPIC "lighting" // Update the lighting mode
+#define PUB_STATE_TOPIC BASE_TOPIC "state" // For reporting current state
+#define PUB_AVAILABLE_TOPIC BASE_TOPIC "available" // For reporting availability
+#define SUB_LIGHTING_TOPIC BASE_TOPIC "lighting"   // Update the lighting mode
 #define SUB_HIGH_BEAM_TOPIC BASE_TOPIC "high_beam" // Update the high beams
 #define SUB_TURNING_TOPIC BASE_TOPIC "turning"     // Update the turning mode
 #define SUB_REVERSE_TOPIC BASE_TOPIC "reverse"     // Update the reverse lights

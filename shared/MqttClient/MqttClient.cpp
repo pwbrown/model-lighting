@@ -224,7 +224,8 @@ void MqttClient::configureWifi(void) {
 /**
  * Setup and configure MQTT client and listen to events
  */
-void MqttClient::configureMqtt(void) {
+void MqttClient::configureMqtt(std::string lwtTopic, std::string lwtMsg,
+                               bool lwtRetain) {
   // Configure and initialize MQTT client
   esp_mqtt_client_config_t mqttConfig = {
       .broker =
@@ -238,6 +239,15 @@ void MqttClient::configureMqtt(void) {
           },
       .credentials = {.client_id = _clientId},
   };
+  // Configure Last Will and Testament if specified
+  if (lwtTopic != "__NULL__" && lwtMsg != "__NULL__") {
+    mqttConfig.session.last_will = {
+        .topic = lwtTopic.c_str(),
+        .msg = lwtMsg.c_str(),
+        .qos = 1,
+        .retain = lwtRetain ? 1 : 0,
+    };
+  }
   _mqttClient = esp_mqtt_client_init(&mqttConfig);
 
   // Register MQTT events to handler
@@ -249,10 +259,14 @@ void MqttClient::configureMqtt(void) {
 /**
  * Configure all clients and services
  */
-MqttClient &MqttClient::configure(void) {
-  configureNvs();
-  configureWifi();
-  configureMqtt();
+MqttClient &MqttClient::configure(std::string lwtTopic, std::string lwtMsg,
+                                  bool lwtRetain) {
+  if (!_isConfigured) {
+    configureNvs();
+    configureWifi();
+    configureMqtt(lwtTopic, lwtMsg, lwtRetain);
+    _isConfigured = true;
+  }
 
   return *this;
 }

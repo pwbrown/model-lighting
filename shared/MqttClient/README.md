@@ -97,6 +97,32 @@ void app_main(void) {
 }
 ```
 
+### Last Will and Testament (LWT)
+
+The MQTT Last Will and Testament protocol is used to allow the MQTT broker to send one last message on the client's behalf if the client is ungracefully disconnected
+
+```cpp
+#include <MqttClient.h>
+
+#define AVAILABLE_TOPIC "/my_client_id/available"
+
+MqttClient myClient("my_client_id");
+
+void onConnectionUpdate(bool, bool, bool) {
+  if (client.isConnected()) {
+    // Publish YES whenever the client connects
+    myClient.publish(AVAILABLE_TOPIC, "YES");
+  }
+}
+
+void app_main(void) {
+  // Configure the client to publish NO as it's LWT
+  myClient.configure(AVAILABLE_TOPIC, "NO", true)
+    .onConnecting(onConnectionUpdate)
+    .start();
+}
+```
+
 ## Member Functions
 
 ### `MqttClient(const char *clientId)` (constructor)
@@ -108,9 +134,16 @@ Create an MQTT client
 | --- | --- | --- |
 | const char* | clientId | The id that is assigned to this topic and made visible to the MQTT broker |
 
-### `MqttClient &configure(void)`
+### `MqttClient &configure(string lwtTopic = "__NULL__", string lwtMsg = "__NULL__", bool lwtRetain = false)`
 
-Configures the Non-Volatile Storage (NVS), WiFi connection, and MQTT Client.
+Configures the Non-Volatile Storage (NVS), WiFi connection, and MQTT Client. Additionally configures the MQTT Last Will and Testament (LWT) message.
+
+**Parameters**
+| Type | Name | Description | Default |
+| --- | --- | --- | --- |
+| string | lwtTopic | The name of the LWT Topic | `"__NULL__"` |
+| string | lwtMsg | The LWT message to send | `"__NULL__"` |
+| bool | lwtRetain | Whether the MQTT broker should retain the LWT topic value | `false` |
 
 ### `MqttClient &onConnecting(function<void(bool, bool, bool)> callback)`
 

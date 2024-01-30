@@ -29,9 +29,15 @@ public:
   MqttClient(const char *clientId);
 
   /**
-   * Configures NVS (non-volatile storage), WiFi, and MQTT
+   * Configures NVS (non-volatile storage), WiFi, and MQTT. Also configures the
+   * Last Will and Testament (LWT)
+   * @param lwtTopic Last Will and Testament Topic
+   * @param lwtMsg Last Will and Testament Message
+   * @param lwtRetain Last Will and Testament Retain Flag
    */
-  MqttClient &configure(void);
+  MqttClient &configure(std::string lwtTopic = "__NULL__",
+                        std::string lwtMsg = "__NULL__",
+                        bool lwtRetain = false);
 
   /**
    * Registers the connecting callback
@@ -77,6 +83,7 @@ private:
 
   // State
   const char *_clientId;       // MQTT Client Id
+  bool _isConfigured = false;  // Indicates if the client has been configured
   bool _wifiConnected = false; // Indicates if the client is connected to wifi
                                // and has an IP address
   bool _ipReceived = false;    // Indicates if an IP address has been received
@@ -98,7 +105,7 @@ private:
   void configureWifi(void);
 
   /** Configure Mqtt client */
-  void configureMqtt(void);
+  void configureMqtt(std::string lwtTopic, std::string lwtMsg, bool lwtRetain);
 
   /** Handle WiFi events */
   void handleWifiEvent(int32_t eventId, void *eventData);

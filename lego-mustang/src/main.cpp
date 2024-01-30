@@ -28,6 +28,9 @@ void app_main(void);
 #define TURNING_LEFT "LEFT"   // Left turn signal
 #define TURNING_RIGHT "RIGHT" // Right turn signal
 
+#define AVAILABLE_YES "YES" // Board is available
+#define AVAILABLE_NO "NO"   // Board is not available
+
 // ********************* STATES ***********************
 std::string lightingState = LIGHT_MODE_OFF;
 std::string highBeamState = SWITCH_OFF;
@@ -296,6 +299,9 @@ void configureTopicSubscriptions(void) {
 void onConnectionUpdate(bool wifiOk, bool ipOk, bool mqttOk) {
   /** Resume previous state when client is fully connected */
   if (client.isConnected()) {
+    // Publish the availability
+    client.publish(PUB_AVAILABLE_TOPIC, AVAILABLE_YES, true);
+    // Restore and publish the existing state
     updateLightsFromState();
     publishCurrentState();
   } else {
@@ -351,8 +357,9 @@ void app_main(void) {
   // Set initial light state
   updateLightsFromState();
 
-  // Configure the MQTT client and subscribe to topics
-  client.configure();
+  // Configure the MQTT client and setup the LWT topic and message
+  client.configure(PUB_AVAILABLE_TOPIC, AVAILABLE_NO, true);
+  // Configure all of the topic subscriptions
   configureTopicSubscriptions();
 
   // Listen for client connection events and start the client
