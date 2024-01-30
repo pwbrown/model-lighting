@@ -30,6 +30,7 @@
 #define PUB_AVAILABLE_TOPIC BASE_TOPIC "available" // For reporting availability
 #define SUB_LIGHTING_TOPIC BASE_TOPIC "lighting"   // Update the lighting mode
 #define SUB_HIGH_BEAM_TOPIC BASE_TOPIC "high_beam" // Update the high beams
+#define SUB_BRAKING_TOPIC BASE_TOPIC "braking"     // Update the braking state
 #define SUB_TURNING_TOPIC BASE_TOPIC "turning"     // Update the turning mode
 #define SUB_REVERSE_TOPIC BASE_TOPIC "reverse"     // Update the reverse lights
 #define SUB_FOG_TOPIC BASE_TOPIC "fog"             // Update the fog lights

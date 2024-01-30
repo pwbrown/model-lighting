@@ -34,6 +34,7 @@ void app_main(void);
 // ********************* STATES ***********************
 std::string lightingState = LIGHT_MODE_OFF;
 std::string highBeamState = SWITCH_OFF;
+std::string brakingState = SWITCH_OFF;
 std::string turningState = TURNING_OFF;
 std::string reverseState = SWITCH_OFF;
 std::string fogState = SWITCH_OFF;
@@ -111,6 +112,11 @@ void updateLightsFromState(void) {
     leftHeadlight.on(HIGH_BEAM_BRIGHTNESS);
     rightHeadlight.on(HIGH_BEAM_BRIGHTNESS);
   }
+  // Braking
+  if (brakingState == SWITCH_ON) {
+    leftTaillight.on(HIGH_BEAM_BRIGHTNESS);
+    rightTaillight.on(HIGH_BEAM_BRIGHTNESS);
+  }
   // Hazards
   if (hazardState == SWITCH_ON) {
     leftHeadlight.blink(BLINKING_INTERVAL);
@@ -139,6 +145,7 @@ void publishCurrentState(void) {
   cJSON *state = cJSON_CreateObject();
   cJSON_AddStringToObject(state, "lighting", lightingState.c_str());
   cJSON_AddStringToObject(state, "high_beam", highBeamState.c_str());
+  cJSON_AddStringToObject(state, "braking", brakingState.c_str());
   cJSON_AddStringToObject(state, "turning", turningState.c_str());
   cJSON_AddStringToObject(state, "reverse", reverseState.c_str());
   cJSON_AddStringToObject(state, "fog", fogState.c_str());
@@ -244,6 +251,15 @@ void setHighBeamState(std::string data) {
 }
 
 /**
+ * Sets the braking state. This overrides the behavior of the low beam
+ * lighting mode while on
+ * @param data Should be ON or OFF
+ */
+void setBrakingState(std::string data) {
+  handleSwitchSubscription(data, brakingState);
+}
+
+/**
  * Sets the turning state. This overrides the behavior of the low beam
  * lighting mode while on
  * @param data Should be OFF, LEFT, or RIGHT
@@ -287,6 +303,7 @@ void setHazardState(std::string data) {
 void configureTopicSubscriptions(void) {
   client.onTopic(SUB_LIGHTING_TOPIC, &setLightState)
       .onTopic(SUB_HIGH_BEAM_TOPIC, &setHighBeamState)
+      .onTopic(SUB_BRAKING_TOPIC, &setBrakingState)
       .onTopic(SUB_TURNING_TOPIC, &setTurningState)
       .onTopic(SUB_REVERSE_TOPIC, &setReverseState)
       .onTopic(SUB_FOG_TOPIC, &setFogState)
