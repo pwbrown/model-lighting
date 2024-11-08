@@ -2,15 +2,19 @@
   "folders": [
     {
       "name": "Lego Mustang",
-      "path": "lego-mustang",
+      "path": "lego-mustang"
     },
     {
       "name": "Shared Libraries",
-      "path": "shared",
+      "path": "shared"
     },
     {
       "name": "Docker Compose",
-      "path": "docker",
+      "path": "docker"
+    },
+    {
+      "name": "Christmas Village",
+      "path": "christmas-village"
     }
   ],
   "settings": {
