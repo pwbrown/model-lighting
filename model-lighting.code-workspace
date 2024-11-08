@@ -1,16 +1,24 @@
 {
   "folders": [
     {
+      "name": "Lego Dark Falcon",
+      "path": "lego-dark-falcon"
+    },
+    {
       "name": "Lego Mustang",
-      "path": "lego-mustang",
+      "path": "lego-mustang"
+    },
+    {
+      "name": "Lego Rivendell",
+      "path": "lego-rivendell"
     },
     {
       "name": "Shared Libraries",
-      "path": "shared",
+      "path": "shared"
     },
     {
       "name": "Docker Compose",
-      "path": "docker",
+      "path": "docker"
     }
   ],
   "settings": {
