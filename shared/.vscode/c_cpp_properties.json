@@ -142,7 +142,8 @@
                 "/Users/philipbrown/.platformio/packages/framework-espidf/components/spiffs/include",
                 "/Users/philipbrown/.platformio/packages/framework-espidf/components/wifi_provisioning/include",
                 "",
-                "/Users/philipbrown/projects/model-lighting/lego-mustang/.pio/build/nodemcu-32s/config"
+                "/Users/philipbrown/projects/model-lighting/lego-mustang/.pio/build/nodemcu-32s/config",
+                "/Users/philipbrown/projects/model-lighting/christmas-village/.pio/build/nodemcu-32s/config"
             ],
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
