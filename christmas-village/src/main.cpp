@@ -23,11 +23,15 @@ void app_main(void);
 
 // ********************* STATES ***********************
 
-// Gingerbread House
-std::string gingerPorchState = SWITCH_OFF;
-std::string gingerCandleState = SWITCH_OFF;
-std::string gingerFirstState = SWITCH_OFF;
-std::string gingerSecondState = SWITCH_OFF;
+std::string allState = SWITCH_OFF;
+std::string gingerbreadState = SWITCH_OFF;
+std::string honeydukesState = SWITCH_OFF;
+std::string threebroomsticksState = SWITCH_OFF;
+std::string toystoreState = SWITCH_OFF;
+std::string musicstoreState = SWITCH_OFF;
+std::string trolleyState = SWITCH_OFF;
+std::string treesState = SWITCH_OFF;
+std::string lampsState = SWITCH_OFF;
 
 // ********************* MQTT CLIENT SETUP *********************
 MqttClient client("christmas_village"); // MQTT Client
@@ -35,20 +39,50 @@ MqttClient client("christmas_village"); // MQTT Client
 // ********************* LIGHT SETUP *************************
 
 // Gingerbread House
-Light gingerPorchLight(GINGERBREAD_PORCH_PIN);
-Light gingerCandleLight(GINGERBREAD_CANDLE_PIN);
-Light gingerFirstLight(GINGERBREAD_FIRST_PIN);
-Light gingerSecondLight(GINGERBREAT_SECOND_PIN);
+Light gingerbreadLight(GINGERBREAD_PIN);
+Light honeydukesLight(HONEYDUKES_PIN);
+Light threebrommsticksLight(THREEBROOMSTICKS_PIN);
+Light toystoreLight(TOYSTORE_PIN);
+Light musicstoreLight(MUSICSTORE_PIN);
+Light trolleyLight(TROLLEY_PIN);
+Light treesLight(TREES_PIN);
+Light lampsLight(LAMPS_PIN);
 
 // ************************ STATE UPDATES **********************
 
 /** Update all lights based on the current state */
 void updateLightsFromState(void) {
-  // Gingerbread House Lights
-  gingerPorchState == SWITCH_ON ? gingerPorchLight.on() : gingerPorchLight.off(); // Porch Light
-  gingerCandleState == SWITCH_ON ? gingerCandleLight.on() : gingerCandleLight.off(); // Candle Lights (first floor above fireplace)
-  gingerFirstState == SWITCH_ON ? gingerFirstLight.on() : gingerFirstLight.off(); // First Floor Ceiling Lights
-  gingerSecondState == SWITCH_ON ? gingerSecondLight.on() : gingerSecondLight.off(); // Second Floor Ceiling Lights
+  gingerbreadState == SWITCH_ON ? gingerbreadLight.on() : gingerbreadLight.off(); // Gingerbread house
+  honeydukesState == SWITCH_ON ? honeydukesLight.on() : honeydukesLight.off(); // Honeydukes
+  threebroomsticksState == SWITCH_ON ? threebrommsticksLight.on() : threebrommsticksLight.off(); // Three Broomsticks
+  toystoreState == SWITCH_ON ? toystoreLight.on() : toystoreLight.off(); // Toy Store
+  musicstoreState == SWITCH_ON ? musicstoreLight.on() : musicstoreLight.off(); // Music Store
+  trolleyState == SWITCH_ON ? trolleyLight.on() : trolleyLight.off(); // Trolley
+  treesState == SWITCH_ON ? treesLight.on() : treesLight.off(); // Trees
+  lampsState == SWITCH_ON ? lampsLight.on() : lampsLight.off(); // Lamps
+}
+
+/**
+ * Updates the ALL lights state in response to individual light state changes.
+ * 
+ * Intended behavior: Any light on means "ALL" lights state should be on (best behavior for automation)
+ */
+void updateAllStateFromSwitchChange(void) {
+  bool anyLightIsOn = (
+    gingerbreadState == SWITCH_ON ||
+    honeydukesState == SWITCH_ON ||
+    threebroomsticksState == SWITCH_ON ||
+    toystoreState == SWITCH_ON ||
+    musicstoreState == SWITCH_ON ||
+    trolleyState == SWITCH_ON ||
+    treesState == SWITCH_ON ||
+    lampsState == SWITCH_ON
+  );
+  if (anyLightIsOn) {
+    allState = SWITCH_ON;
+  } else {
+    allState = SWITCH_OFF;
+  }
 }
 
 /**
@@ -58,14 +92,16 @@ void updateLightsFromState(void) {
 void publishCurrentState(void) {
   // Create state object and fill with state values
   cJSON *state = cJSON_CreateObject();
-
-  // Gingerbread House State
-  cJSON *gingerbreadState = cJSON_CreateObject();
-  cJSON_AddItemToObject(state, "gingerbread", gingerbreadState);
-  cJSON_AddStringToObject(gingerbreadState, "porch", gingerPorchState.c_str());
-  cJSON_AddStringToObject(gingerbreadState, "candle", gingerCandleState.c_str());
-  cJSON_AddStringToObject(gingerbreadState, "first", gingerFirstState.c_str());
-  cJSON_AddStringToObject(gingerbreadState, "second", gingerSecondState.c_str());
+  
+  cJSON_AddStringToObject(state, "all", allState.c_str());
+  cJSON_AddStringToObject(state, "gingerbread", gingerbreadState.c_str());
+  cJSON_AddStringToObject(state, "honeydukes", honeydukesState.c_str());
+  cJSON_AddStringToObject(state, "threebroomsticks", threebroomsticksState.c_str());
+  cJSON_AddStringToObject(state, "toystore", toystoreState.c_str());
+  cJSON_AddStringToObject(state, "musicstore", musicstoreState.c_str());
+  cJSON_AddStringToObject(state, "trolley", trolleyState.c_str());
+  cJSON_AddStringToObject(state, "trees", treesState.c_str());
+  cJSON_AddStringToObject(state, "lamps", lampsState.c_str());
 
   // Convert state object to string
   char *stateStr = cJSON_PrintUnformatted(state);
@@ -94,6 +130,7 @@ void handleSubscription(std::string data, std::string &state,
     return;
   }
   state = data;
+  updateAllStateFromSwitchChange();
   updateLightsFromState();
   publishCurrentState();
 }
@@ -105,44 +142,77 @@ void handleSwitchSubscription(std::string data, std::string &state) {
 
 // *********************** SUBSCRIPTION CALLBACKS *********************
 
-// Gingerbread control all state
-void setGingerAllState(std::string data) {
+void setAllState(std::string data) {
   if (!isSwitchStr(data)) {
     return;
   }
-  gingerPorchState = data;
-  gingerCandleState = data;
-  gingerFirstState = data;
-  gingerSecondState = data;
+  allState = data;
+  // Update all lights with new state
+  gingerbreadState = data;
+  honeydukesState = data;
+  threebroomsticksState = data;
+  toystoreState = data;
+  musicstoreState = data;
+  trolleyState = data;
+  treesState = data;
+  lampsState = data;
+  // Finalize updates
   updateLightsFromState();
   publishCurrentState();
 }
 
-// Gingerbread State Callbacks
-void setGingerPorchState(std::string data) {
-  handleSwitchSubscription(data, gingerPorchState);
+// Gingerbread State
+void setGingerbreadState(std::string data) {
+  handleSwitchSubscription(data, gingerbreadState);
 }
 
-void setGingerCandleState(std::string data) {
-  handleSwitchSubscription(data, gingerCandleState);
+// Honeydukes State
+void setHoneydukesState(std::string data) {
+  handleSwitchSubscription(data, honeydukesState);
 }
 
-void setGingerFirstState(std::string data) {
-  handleSwitchSubscription(data, gingerFirstState);
+// Three Broomsticks State
+void setThreebroomsticksState(std::string data) {
+  handleSwitchSubscription(data, threebroomsticksState);
 }
 
-void setGingerSecondState(std::string data) {
-  handleSwitchSubscription(data, gingerSecondState);
+// Toy Store State
+void setToystoreState(std::string data) {
+  handleSwitchSubscription(data, toystoreState);
+}
+
+// Music Store State
+void setMusicstoreState(std::string data) {
+  handleSwitchSubscription(data, musicstoreState);
+}
+
+// Trolley State
+void setTrolleyState(std::string data) {
+  handleSwitchSubscription(data, trolleyState);
+}
+
+// Trees State
+void setTreesState(std::string data) {
+  handleSwitchSubscription(data, treesState);
+}
+
+// Lamps State
+void setLampsState(std::string data) {
+  handleSwitchSubscription(data, lampsState);
 }
 
 // Add all topic subscriptions to the MQTT client
 void configureTopicSubscriptions(void) {
   // Gingerbread House Topics
-  client.onTopic(SUB_GINGERBREAD_ALL_TOPIC, &setGingerAllState)
-      .onTopic(SUB_GINGERBREAD_PORCH_TOPIC, &setGingerPorchState)
-      .onTopic(SUB_GINGERBREAD_CANDLE_TOPIC, &setGingerCandleState)
-      .onTopic(SUB_GINGERBREAD_FIRST_TOPIC, &setGingerFirstState)
-      .onTopic(SUB_GINGERBREAD_SECOND_TOPIC, &setGingerSecondState);
+  client.onTopic(SUB_ALL_TOPIC, &setAllState)
+      .onTopic(SUB_GINGERBREAD_TOPIC, &setGingerbreadState)
+      .onTopic(SUB_HONEYDUKES_TOPIC, &setHoneydukesState)
+      .onTopic(SUB_THREEBROOMSTICKS_TOPIC, &setThreebroomsticksState)
+      .onTopic(SUB_TOYSTORE_TOPIC, &setToystoreState)
+      .onTopic(SUB_MUSICSTORE_TOPIC, &setMusicstoreState)
+      .onTopic(SUB_TROLLEY_TOPIC, &setTrolleyState)
+      .onTopic(SUB_TREES_TOPIC, &setTreesState)
+      .onTopic(SUB_LAMPS_TOPIC, &setLampsState);
 }
 
 /** Handle MQTT Client Connection State */
@@ -156,10 +226,7 @@ void onConnectionUpdate(bool wifiOk, bool ipOk, bool mqttOk) {
     publishCurrentState();
   } else {
     // Client is disconnected so turn off all lights and blink the candles
-    gingerPorchLight.blink();
-    gingerFirstLight.off();
-    gingerSecondLight.off();
-    gingerCandleLight.off();
+    gingerbreadLight.blink();
   }
 }
 
@@ -167,7 +234,7 @@ void onConnectionUpdate(bool wifiOk, bool ipOk, bool mqttOk) {
  * Main loop function for lighting effects
  */
 void loop(unsigned int now) {
-  gingerPorchLight.loop(now); // Blinks while trying to establish a connection
+  gingerbreadLight.loop(now); // Blinks while trying to establish a connection
 }
 
 /**
