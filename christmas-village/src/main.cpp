@@ -38,6 +38,8 @@ MqttClient client("christmas_village"); // MQTT Client
 
 // ********************* LIGHT SETUP *************************
 
+int pwmChannel = 0;
+
 // Gingerbread House
 Light gingerbreadLight(GINGERBREAD_PIN);
 Light honeydukesLight(HONEYDUKES_PIN);
@@ -45,7 +47,7 @@ Light threebrommsticksLight(THREEBROOMSTICKS_PIN);
 Light toystoreLight(TOYSTORE_PIN);
 Light musicstoreLight(MUSICSTORE_PIN);
 Light trolleyLight(TROLLEY_PIN);
-Light treesLight(TREES_PIN);
+Light treesLight(TREES_PIN, pwmChannel++);
 Light lampsLight(LAMPS_PIN);
 
 // ************************ STATE UPDATES **********************
@@ -58,7 +60,7 @@ void updateLightsFromState(void) {
   toystoreState == SWITCH_ON ? toystoreLight.on() : toystoreLight.off(); // Toy Store
   musicstoreState == SWITCH_ON ? musicstoreLight.on() : musicstoreLight.off(); // Music Store
   trolleyState == SWITCH_ON ? trolleyLight.on() : trolleyLight.off(); // Trolley
-  treesState == SWITCH_ON ? treesLight.on() : treesLight.off(); // Trees
+  treesState == SWITCH_ON ? treesLight.on(25) : treesLight.off(); // Trees (custom brightness)
   lampsState == SWITCH_ON ? lampsLight.on() : lampsLight.off(); // Lamps
 }
 
@@ -242,6 +244,8 @@ void loop(unsigned int now) {
  * effects loop
  */
 void app_main(void) {
+  Light::configurePWMTimer();
+
   // Set initial light state
   updateLightsFromState();
 

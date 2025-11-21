@@ -15,6 +15,10 @@
     {
       "name": "Christmas Village",
       "path": "christmas-village"
+    },
+    {
+      "name": "Testing",
+      "path": "testing"
     }
   ],
   "settings": {
